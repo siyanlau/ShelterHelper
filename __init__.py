@@ -28,7 +28,7 @@ def login():
 def register():
     return render_template('register.html')
 
-
+#Define route for login authentication
 @app.route('/loginAuth', methods=['GET', 'POST'])
 def loginAuth():
     # Only process form if POST method
@@ -38,10 +38,11 @@ def loginAuth():
 
         # Query DB for user
         cursor = conn.cursor()
-        query = 'SELECT * FROM Person WHERE userName = %s'
+        query = 'SELECT * FROM person WHERE userName = %s'
         cursor.execute(query, (username,))
         user = cursor.fetchone()
         cursor.close()
+        error = None
 
         if user:
             stored_hash = user['password']
@@ -53,22 +54,21 @@ def loginAuth():
             # Compare the two hashes
             if entered_hash == stored_hash:
                 # Successful login
+                # creates a session for the user
                 session['username'] = username
-                flash("Login successful!")
-                return redirect(url_for('hello'))
+                # don't just render_template to home.html, because only logged in users can access that page
+                # we shall put session verification logic in home()
+                return redirect(url_for('home'))
             else:
                 # Incorrect password
-                flash("Incorrect password.")
-                return redirect(url_for('login'))
+                error = 'Invalid credentials'
+                return render_template('login.html', error=error)
         else:
             # Username not found
-            flash("Username does not exist.")
-            return redirect(url_for('login'))
-    else:
-        # If it's not a POST request, just redirect to login page
-        return redirect(url_for('login'))
+            error = 'User not found'
+            return render_template('login.html', error=error)
 
-
+#Define route for register authentication
 @app.route('/registerAuth', methods=['GET', 'POST'])
 def registerAuth():
     if request.method == 'POST':
@@ -82,24 +82,33 @@ def registerAuth():
         salt = os.urandom(16).hex()
         hashed_pwd = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
 
-        # Insert new user into the database
         cursor = conn.cursor()
-        query = 'INSERT INTO Person (userName, password, fname, lname, email, salt) VALUES (%s, %s, %s, %s, %s, %s)'
-        try:
+        # Verify if user already exists
+        query = 'SELECT * FROM person WHERE username = %s'
+        cursor.execute(query, (username))
+        # store the result (could be empty) in a variable
+        data = cursor.fetchone()
+        error = None
+        if (data):
+            error = "Username already exists! Please log in."
+            return render_template('register.html', error = error)
+        else:
+            # username does not exist. we can insert into DB
+            query = 'INSERT INTO person VALUES(%s, %s, %s, %s, %s, %s)'
             cursor.execute(query, (username, hashed_pwd, fname, lname, email, salt))
             conn.commit()
             cursor.close()
-            flash("You are registered! Please log in.")
-            return redirect(url_for('login'))
-        except pymysql.err.IntegrityError:
-            # Username already taken (assuming userName is a PRIMARY KEY)
-            cursor.close()
-            error = "This user already exists"
-            return render_template('register.html', error = error)
-    else:
-        # If it's not a POST request, just redirect to register page
-        return redirect('/index')
+            return render_template('login.html')
 
+@app.route('/home')
+def home():
+    user = session['username']
+    cursor = conn.cursor()
+    # query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
+    # cursor.execute(query, (user))
+    # data = cursor.fetchall()
+    # cursor.close()
+    return render_template('home.html', username=user)
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
