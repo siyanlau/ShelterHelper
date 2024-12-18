@@ -100,15 +100,20 @@ def registerAuth():
             cursor.close()
             return render_template('login.html')
 
+#Define route for home page (must be logged in)
 @app.route('/home')
 def home():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
     user = session['username']
-    cursor = conn.cursor()
-    # query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-    # cursor.execute(query, (user))
-    # data = cursor.fetchall()
-    # cursor.close()
     return render_template('home.html', username=user)
+
+# Define route for logging out user
+@app.route('/logout')
+def logout():
+    session.pop('username')
+    return redirect('/')
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
