@@ -1,5 +1,5 @@
 #Import Flask Library
-from flask import Flask, render_template, request, session, url_for, redirect, flash
+from flask import render_template, request, session, url_for, redirect, flash
 import pymysql.cursors
 from app import app
 
@@ -16,6 +16,16 @@ conn = pymysql.connect(host='localhost',
 @app.route('/')
 def hello():
     return render_template('index.html')
+
+#Define route for login
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+#Define route for register
+@app.route('/register')
+def register():
+    return render_template('register.html')
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
