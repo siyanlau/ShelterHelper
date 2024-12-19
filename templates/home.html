@@ -1,15 +1,40 @@
 <html>
 <head>
+    <title>Home</title>
 </head>
 <body>
-<form action="/post" method="POST">
-	<h1>Welcome {{username}}</h1> 
-	<input type="text" name = "blog" placeholder="post" required/> </br>
-	<input type="submit" value = Post />
-</form>
+    <h1>Welcome, {{ username }}!</h1>
 
-<a href="/logout">Logout</a>
+    <h2>Find Single Item</h2>
+    <form action="/findItem" method="POST">
+        <input type="number" name="itemID" placeholder="Enter Item ID" required />
+        <button type="submit">Find Item</button>
+    </form>
+
+	{% if error %}
+		<p style="color: red;"><strong>Error:</strong> {{ error }}</p>
+	{% endif %}
+
+    {% if item %}
+        <h3>Item Details:</h3>
+        <p><strong>Description:</strong> {{ item.iDescription }}</p>
+        <p><strong>Color:</strong> {{ item.color }}</p>
+        <p><strong>Material:</strong> {{ item.material }}</p>
+        <p><strong>Is New:</strong> {{ 'Yes' if item.isNew else 'No' }}</p>
+
+        {% if locations %}
+            <h3>Locations:</h3>
+            <ul>
+                {% for loc in locations %}
+
+                    <li>Piece {{ loc.pieceNum }}: {{ loc.pDescription }} - Room {{ loc.roomNum }}, Shelf {{ loc.shelfNum }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No locations found for this item.</p>
+        {% endif %}
+    {% endif %}
+
+    <a href="/logout">Logout</a>
 </body>
-
-
 </html>

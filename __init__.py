@@ -3,6 +3,7 @@ from flask import render_template, request, session, url_for, redirect, flash
 import pymysql.cursors
 from app import app
 import hashlib, os
+from queries import query_fetch_locations_by_itemID
 
 #Configure MySQL
 conn = pymysql.connect(host='localhost',
@@ -109,11 +110,40 @@ def home():
     user = session['username']
     return render_template('home.html', username=user)
 
-# Define route for logging out user
+#Define route for logging out user
 @app.route('/logout')
 def logout():
     session.pop('username')
     return redirect('/')
 
+#Define route for finding a single item using itemID
+@app.route('/findItem', methods=['POST'])
+def findItem():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    itemID = request.form['itemID']
+
+    # Query the database to get item details and locations
+    cursor = conn.cursor()
+
+    # Fetch item details
+    item_query = 'SELECT * FROM Item WHERE ItemID = %s'
+    cursor.execute(item_query, (itemID,))
+    itemDetail = cursor.fetchone()
+
+    # Fetch piece details and locations (join with Location if necessary)
+    itemLocations = []
+    error = None
+    if itemDetail:
+        cursor.execute(query_fetch_locations_by_itemID, (itemID,))
+        itemLocations = cursor.fetchall()
+    else:
+        error = f"Item with ID {itemID} not found in the database."    
+    
+    cursor.close()
+    
+    return render_template('home.html', username=session['username'], item=itemDetail, locations=itemLocations, error=error)
+    
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
