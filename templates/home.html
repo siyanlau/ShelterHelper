@@ -17,6 +17,7 @@
 
     {% if item %}
         <h3>Item Details:</h3>
+		<p><strong>Item ID:</strong> {{ item.ItemID }}</p>
         <p><strong>Description:</strong> {{ item.iDescription }}</p>
         <p><strong>Color:</strong> {{ item.color }}</p>
         <p><strong>Material:</strong> {{ item.material }}</p>
@@ -34,6 +35,43 @@
             <p>No locations found for this item.</p>
         {% endif %}
     {% endif %}
+
+
+	<h2>Find Order Items</h2>
+<form action="/findOrderItems" method="POST">
+    <input type="number" name="orderID" placeholder="Enter Order ID" required />
+    <button type="submit">Find Items</button>
+</form>
+
+{% if error %}
+    <p style="color: red;"><strong>Error:</strong> {{ error }}</p>
+{% endif %}
+
+{% if order %}
+    <h3>Order Details:</h3>
+    <p><strong>Order ID:</strong> {{ order.orderID }}</p>
+    <p><strong>Order Date:</strong> {{ order.orderDate }}</p>
+    
+    {% if items %}
+        <h3>Items in Order:</h3>
+        <ul>
+            {% for item in items %}
+                <li>
+                    <strong>{{ item.iDescription }}</strong> (Color: {{ item.color }}, Material: {{ item.material }})
+                    {% if item.locations %}
+                        <ul>
+                            {% for location in item.locations %}
+                                <li>Room: {{ location.roomNum }}, Shelf: {{ location.shelfNum }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No locations available for this item.</p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endif %}
 
     <a href="/logout">Logout</a>
 </body>

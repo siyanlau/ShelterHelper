@@ -3,7 +3,8 @@ from flask import render_template, request, session, url_for, redirect, flash
 import pymysql.cursors
 from app import app
 import hashlib, os
-from queries import query_fetch_locations_by_itemID
+from queries import query_fetch_locations_by_itemID, query_fetch_orderID, query_fetch_items_by_orderID
+
 
 #Configure MySQL
 conn = pymysql.connect(host='localhost',
@@ -145,5 +146,51 @@ def findItem():
     
     return render_template('home.html', username=session['username'], item=itemDetail, locations=itemLocations, error=error)
     
+#Find all items in an order and the location of each piece    
+@app.route('/findOrderItems', methods=['POST'])
+def findOrderItems():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    orderID = request.form['orderID']
+
+    # Initialize variables for template rendering
+    orderDetails = None
+    items = []
+    error = None
+
+    # Connect to the database
+    cursor = conn.cursor()
+
+    # Check if the orderID is valid
+    cursor.execute(query_fetch_orderID, (orderID,))
+    orderDetails = cursor.fetchone()
+
+    if not orderDetails:
+        error = f"Order with ID {orderID} not found."
+        cursor.close()
+        return render_template('home.html', username=session['username'], error=error)
+
+    # Fetch items in the order
+    cursor.execute(query_fetch_items_by_orderID, (orderID,))
+    itemsInOrder = cursor.fetchall()
+
+    if not itemsInOrder:
+        error = f"No items found for Order ID {orderID}."
+        cursor.close()
+        return render_template('home.html', username=session['username'], error=error)
+
+    # Fetch locations for each item
+    for item in itemsInOrder:
+        itemID = item['ItemID']
+        cursor.execute(query_fetch_locations_by_itemID, (itemID,))
+        item['locations'] = cursor.fetchall()
+        items.append(item)
+
+    cursor.close()
+
+    # Render the template with order and item details
+    return render_template('home.html', username=session['username'], order=orderDetails, items=items)
+
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
