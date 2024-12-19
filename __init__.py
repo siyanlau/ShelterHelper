@@ -79,6 +79,7 @@ def registerAuth():
         fname = request.form['fname']
         lname = request.form['lname']
         email = request.form['email']
+        role = request.form.get('role', 'customer')  # Default to 'customer'
 
         # Generate salt and hash password
         salt = os.urandom(16).hex()
@@ -96,8 +97,8 @@ def registerAuth():
             return render_template('register.html', error = error)
         else:
             # username does not exist. we can insert into DB
-            query = 'INSERT INTO person VALUES(%s, %s, %s, %s, %s, %s)'
-            cursor.execute(query, (username, hashed_pwd, fname, lname, email, salt))
+            query = 'INSERT INTO person VALUES(%s, %s, %s, %s, %s, %s, %s)'
+            cursor.execute(query, (username, hashed_pwd, fname, lname, email, salt, role))
             conn.commit()
             cursor.close()
             return render_template('login.html')
@@ -133,7 +134,7 @@ def findItem():
     cursor.execute(item_query, (itemID,))
     itemDetail = cursor.fetchone()
 
-    # Fetch piece details and locations (join with Location if necessary)
+    # Fetch piece details and locations
     itemLocations = []
     error = None
     if itemDetail:
@@ -144,8 +145,8 @@ def findItem():
     
     cursor.close()
     
-    return render_template('home.html', username=session['username'], item=itemDetail, locations=itemLocations, error=error)
-    
+    return render_template('findItem.html', username=session['username'], item=itemDetail, locations=itemLocations, error=error)
+ 
 #Find all items in an order and the location of each piece    
 @app.route('/findOrderItems', methods=['POST'])
 def findOrderItems():
@@ -169,7 +170,7 @@ def findOrderItems():
     if not orderDetails:
         error = f"Order with ID {orderID} not found."
         cursor.close()
-        return render_template('home.html', username=session['username'], error=error)
+        return render_template('findOrderItems.html', username=session['username'], error=error)
 
     # Fetch items in the order
     cursor.execute(query_fetch_items_by_orderID, (orderID,))
@@ -178,7 +179,7 @@ def findOrderItems():
     if not itemsInOrder:
         error = f"No items found for Order ID {orderID}."
         cursor.close()
-        return render_template('home.html', username=session['username'], error=error)
+        return render_template('findOrderItems.html', username=session['username'], error=error)
 
     # Fetch locations for each item
     for item in itemsInOrder:
@@ -190,7 +191,19 @@ def findOrderItems():
     cursor.close()
 
     # Render the template with order and item details
-    return render_template('home.html', username=session['username'], order=orderDetails, items=items)
+    return render_template('findOrderItems.html', username=session['username'], order=orderDetails, items=items)
+
+@app.route('/findItemPage')
+def findItemPage():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('findItem.html')
+
+@app.route('/findOrderItemsPage')
+def findOrderItemsPage():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('findOrderItems.html')
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)

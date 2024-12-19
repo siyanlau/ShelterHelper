@@ -9,6 +9,13 @@
         <input type="text" name="fname" placeholder="First Name" required /><br />
         <input type="text" name="lname" placeholder="Last Name" required /><br />
         <input type="email" name="email" placeholder="Email Address" required /><br />
+        <label for="role">Select your role:</label>
+        <select name="role" id="role">
+            <option value="customer" selected>Customer</option>
+            <option value="staff">Staff</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="donor">Donor</option>
+        </select> <br />
         <input type="submit" value="Register" />
         {% if error %}
             <p class="error"><strong>Error:</strong> {{ error }}</p>
