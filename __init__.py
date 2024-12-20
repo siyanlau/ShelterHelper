@@ -457,12 +457,22 @@ def addToOrder():
         return render_template('error.html', error=error)
 
     categories, category_data = fetch_categories()
+    
+    orderID = session['orderID']
+    cursor = conn.cursor()
+    query_fetch_orderInfo = '''
+        SELECT orderID, orderDate, supervisor, client FROM ordered
+        WHERE orderID = %s
+    '''
+    cursor.execute(query_fetch_orderInfo ,(orderID,))
+    orderInfo = cursor.fetchone()
 
     return render_template(
         'addToOrder.html',
         username=session['username'],
         categories=categories,
-        category_data=category_data
+        category_data=category_data,
+        order=orderInfo
     )
 
 @app.route('/fetchItems', methods=['POST'])
