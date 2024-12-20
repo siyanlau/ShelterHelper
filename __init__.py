@@ -258,8 +258,26 @@ def acceptDonation():
 def submitItem(donorID):
     if 'username' not in session:
         return redirect(url_for('login'))
-
     username = session['username']
+    
+    cursor = conn.cursor()
+    
+    # Fetch category data
+    query = "SELECT mainCategory, subCategory FROM Category"
+    cursor.execute(query)
+    categories = cursor.fetchall()
+    cursor.close()
+
+    # Organize data into a dictionary
+    category_data = {}
+    for row in categories:
+        main = row['mainCategory']
+        sub = row['subCategory']
+        if main not in category_data:
+            category_data[main] = []
+        category_data[main].append(sub)
+
+    # validate item form submission and redirect to submit pieces
     if request.method == 'POST':
         itemDescription = request.form['itemDescription']
         photo = request.form['photo']
@@ -290,7 +308,7 @@ def submitItem(donorID):
             numPieces=numPieces
         )
 
-    return render_template('submitItem.html', username=username, donorID=donorID)
+    return render_template('submitItem.html', donorID=donorID, category_data=category_data)
 
 @app.route('/submitPieces', methods=['POST'])
 def submitPieces():

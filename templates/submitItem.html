@@ -22,11 +22,20 @@
         <label for="material">Material:</label>
         <input type="text" name="material" required> <br>
 
+        <!-- Dropdown for Main Category -->
         <label for="mainCategory">Main Category:</label>
-        <input type="text" name="mainCategory" required> <br>
+        <select id="mainCategory" name="mainCategory" required>
+            <option value="" disabled selected>Select a Main Category</option>
+            {% for mainCategory in category_data.keys() %}
+                <option value="{{ mainCategory }}">{{ mainCategory }}</option>
+            {% endfor %}
+        </select> <br>
 
+        <!-- Dropdown for Subcategory -->
         <label for="subCategory">Subcategory:</label>
-        <input type="text" name="subCategory" required> <br>
+        <select id="subCategory" name="subCategory" required disabled>
+            <option value="" disabled selected>Select a Subcategory</option>
+        </select> <br>
 
         <label for="numPieces">Number of Pieces:</label>
         <input type="number" name="numPieces" min="1" required> <br>
@@ -39,5 +48,11 @@
     {% endif %}
 
     <a href="/acceptDonation">Back to Donor Validation</a>
+
+    <!-- Inject category data as a JavaScript variable -->
+    <script>
+        const categoryData = {{ category_data|tojson }};
+    </script>
+    <script src="/static/js/category.js"></script>
 </body>
 </html>
