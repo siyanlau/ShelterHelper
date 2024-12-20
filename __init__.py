@@ -292,6 +292,8 @@ def submitItem(donorID):
         if not itemDescription or not mainCategory or not subCategory:
             error = "Required fields are missing."
             return render_template('submitItem.html', username=username, donorID=donorID, error=error)
+        
+        location_data = fetch_location_data()
 
         # Store data in session or pass along as hidden fields
         return render_template(
@@ -305,78 +307,88 @@ def submitItem(donorID):
             material=material,
             mainCategory=mainCategory,
             subCategory=subCategory,
-            numPieces=numPieces
+            numPieces=numPieces,
+            location_data=location_data  # Pass location data here
         )
 
     return render_template('submitItem.html', donorID=donorID, category_data=category_data)
 
-@app.route('/submitPieces', methods=['POST'])
+@app.route('/submitPieces', methods=['GET', 'POST'])
 def submitPieces():
     if 'username' not in session:
         return redirect(url_for('login'))
 
-    # Collect hidden fields for item-level details
-    donorID = request.form['donorID']
-    itemDescription = request.form['itemDescription']
-    photo = request.form['photo']
-    color = request.form['color']
-    isNew = int(request.form['isNew'])
-    material = request.form['material']
-    mainCategory = request.form['mainCategory']
-    subCategory = request.form['subCategory']
-    numPieces = int(request.form['numPieces'])
+    if request.method == 'POST':
+        # Collect hidden fields for item-level details
+        donorID = request.form['donorID']
+        itemDescription = request.form['itemDescription']
+        photo = request.form['photo']
+        color = request.form['color']
+        isNew = int(request.form['isNew'])
+        material = request.form['material']
+        mainCategory = request.form['mainCategory']
+        subCategory = request.form['subCategory']
+        numPieces = int(request.form['numPieces'])
 
-    cursor = conn.cursor()
+        cursor = conn.cursor()
 
-    # Insert into Item table
-    query_insert_item = '''
-        INSERT INTO Item (iDescription, photo, color, isNew, hasPieces, material, mainCategory, subCategory)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    '''
-    cursor.execute(query_insert_item, (itemDescription, photo, color, isNew, 1 if numPieces > 1 else 0, material, mainCategory, subCategory))
-    conn.commit()
-    itemID = cursor.lastrowid
-
-    # Insert into Piece table
-    query_insert_piece = '''
-        INSERT INTO Piece (ItemID, pieceNum, pDescription, length, width, height, roomNum, shelfNum, pNotes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    '''
-    for i in range(1, numPieces + 1):
-        piece_description = request.form[f'pDescription{i}']
-        length = int(request.form[f'length{i}'])
-        width = int(request.form[f'width{i}'])
-        height = int(request.form[f'height{i}'])
-        room_num = int(request.form[f'roomNum{i}'])
-        shelf_num = int(request.form[f'shelfNum{i}'])
-        notes = request.form.get(f'pNotes{i}', '')
-
-        # Validate location
-        query_check_location = '''
-            SELECT * FROM Location 
-            WHERE roomNum = %s AND shelfNum = %s
+        # Insert into Item table
+        query_insert_item = '''
+            INSERT INTO Item (iDescription, photo, color, isNew, hasPieces, material, mainCategory, subCategory)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         '''
-        cursor.execute(query_check_location, (room_num, shelf_num))
-        location = cursor.fetchone()
+        cursor.execute(query_insert_item, (itemDescription, photo, color, isNew, 1 if numPieces > 1 else 0, material, mainCategory, subCategory))
+        conn.commit()
+        itemID = cursor.lastrowid
 
-        if not location:
-            cursor.close()
-            error = f"Invalid location specified for piece {i}."
-            return render_template('submitPieces.html', error=error)
+        # Insert into Piece table
+        query_insert_piece = '''
+            INSERT INTO Piece (ItemID, pieceNum, pDescription, length, width, height, roomNum, shelfNum, pNotes)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        '''
+        for i in range(1, numPieces + 1):
+            piece_description = request.form[f'pDescription{i}']
+            length = int(request.form[f'length{i}'])
+            width = int(request.form[f'width{i}'])
+            height = int(request.form[f'height{i}'])
+            room_num = int(request.form[f'roomNum{i}'])
+            shelf_num = int(request.form[f'shelfNum{i}'])
+            notes = request.form.get(f'pNotes{i}', '')
 
-        cursor.execute(query_insert_piece, (itemID, i, piece_description, length, width, height, room_num, shelf_num, notes))
-    conn.commit()
+            # Validate location
+            query_check_location = '''
+                SELECT * FROM Location 
+                WHERE roomNum = %s AND shelfNum = %s
+            '''
+            cursor.execute(query_check_location, (room_num, shelf_num))
+            location = cursor.fetchone()
 
-    # Insert into DonatedBy table
-    query_insert_donatedby = '''
-        INSERT INTO DonatedBy (ItemID, userName, donateDate)
-        VALUES (%s, %s, NOW())
-    '''
-    cursor.execute(query_insert_donatedby, (itemID, donorID))
-    conn.commit()
-    cursor.close()
+            if not location:
+                cursor.close()
+                error = f"Invalid location specified for piece {i}."
+                return render_template('submitPieces.html', error=error)
 
-    return render_template('success.html', success="Donation successfully recorded.")
+            cursor.execute(query_insert_piece, (itemID, i, piece_description, length, width, height, room_num, shelf_num, notes))
+        conn.commit()
+
+        # Insert into DonatedBy table
+        query_insert_donatedby = '''
+            INSERT INTO DonatedBy (ItemID, userName, donateDate)
+            VALUES (%s, %s, NOW())
+        '''
+        cursor.execute(query_insert_donatedby, (itemID, donorID))
+        conn.commit()
+        cursor.close()
+
+        return render_template('success.html', success="Donation successfully recorded.")
+
+    location_data = fetch_location_data()
+    return render_template(
+        'submitPieces.html',
+        donorID=request.args.get('donorID'),
+        numPieces=request.args.get('numPieces'),
+        location_data=location_data
+    )
 
 
 @app.route('/validateDonor', methods=['POST'])
@@ -411,7 +423,22 @@ def validateDonor():
     # Proceed to donation form (next step)
     return render_template('acceptDonation.html', username=session['username'])
 
+def fetch_location_data():
+    cursor = conn.cursor()
+    query_location_data = "SELECT roomNum, shelfNum FROM location"
+    cursor.execute(query_location_data)
+    locations = cursor.fetchall()
+    cursor.close()
 
+    location_data = {}
+    for loc in locations:
+        room = loc['roomNum']
+        shelf = loc['shelfNum']
+        if room not in location_data:
+            location_data[room] = []
+        location_data[room].append(shelf)
+    
+    return location_data
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)

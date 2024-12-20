@@ -20,6 +20,7 @@
         {% for i in range(1, numPieces + 1) %}
             <fieldset>
                 <legend>Piece {{ i }}</legend>
+
                 <label for="pDescription{{ i }}">Description:</label>
                 <input type="text" name="pDescription{{ i }}" required> <br>
 
@@ -32,11 +33,23 @@
                 <label for="height{{ i }}">Height:</label>
                 <input type="number" name="height{{ i }}" min="0" required> <br>
 
+                <!-- Room Dropdown -->
                 <label for="roomNum{{ i }}">Room Number:</label>
-                <input type="number" name="roomNum{{ i }}" required> <br>
 
+                <select id="roomNum{{ i }}" name="roomNum{{ i }}" required>
+                    <option value="" disabled selected>Select a Room</option>
+                    {% if location_data %}
+                        {% for room in location_data.keys() %}
+                            <option value="{{ room }}">{{ room }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select> <br>
+
+                <!-- Shelf Dropdown -->
                 <label for="shelfNum{{ i }}">Shelf Number:</label>
-                <input type="number" name="shelfNum{{ i }}" required> <br>
+                <select id="shelfNum{{ i }}" name="shelfNum{{ i }}" required disabled>
+                    <option value="" disabled selected>Select a Shelf</option>
+                </select> <br>
 
                 <label for="pNotes{{ i }}">Notes:</label>
                 <textarea name="pNotes{{ i }}" rows="3"></textarea> <br>
@@ -52,5 +65,12 @@
     {% endif %}
 
     <a href="/submitItem/{{ donorID }}">Back to Item Submission</a>
+
+    <!-- Inject location data as a JavaScript variable -->
+    <script>
+        const locationData = {{ location_data|tojson }};
+        console.log(locationData);
+    </script>
+    <script src="/static/js/location.js"></script>
 </body>
 </html>
