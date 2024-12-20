@@ -1,0 +1,22 @@
+<html>
+<head>
+    <title>Start Order</title>
+</head>
+<body>
+    <h1>Start an Order</h1>
+
+    <p>Welcome, {{ username }}! Enter the username of the client for whom you want to start an order.</p>
+
+    <form action="/startOrder" method="POST">
+        <label for="clientUsername">Client's Username:</label>
+        <input type="text" id="clientUsername" name="clientUsername" required>
+        <button type="submit">Start Order</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <a href="/home">Back to Home</a>
+</body>
+</html>

@@ -390,6 +390,72 @@ def submitPieces():
         location_data=location_data
     )
 
+@app.route('/startOrder', methods=['GET', 'POST'])
+def startOrder():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    username = session['username']
+    error = None
+
+    # Check if the logged-in user is a staff member
+    cursor = conn.cursor()
+    query_check_role = '''
+        SELECT roleID FROM Person WHERE userName = %s
+    '''
+    cursor.execute(query_check_role, (username,))
+    role = cursor.fetchone()
+    if not role or role['roleID'] != 'staff':
+        cursor.close()
+        error = "You must be a staff member to start an order."
+        return render_template('error.html', error=error)
+
+    # Handle POST request to start the order
+    if request.method == 'POST':
+        clientUsername = request.form['clientUsername']
+
+        # Validate client username
+        query_check_client = '''
+            SELECT roleID FROM Person WHERE userName = %s
+        '''
+        cursor.execute(query_check_client, (clientUsername,))
+        client = cursor.fetchone()
+
+        if not client:
+            error = "The specified client username does not exist."
+        elif client['roleID'] != 'customer':
+            error = "The specified user is not a client."
+        else:
+            # Create the order
+            query_create_order = '''
+                INSERT INTO Ordered (orderDate, supervisor, client)
+                VALUES (NOW(), %s, %s)
+            '''
+            cursor.execute(query_create_order, (username, clientUsername))
+            conn.commit()
+            orderID = cursor.lastrowid
+
+            # Save orderID in session
+            session['orderID'] = orderID
+
+            cursor.close()
+            return redirect(url_for('addToOrder'))  # Redirect to adding items
+
+        cursor.close()
+
+    # Render the start order form
+    return render_template('startOrder.html', username=username, error=error)
+
+@app.route('/addToOrder', methods=['GET'])
+def addToOrder():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    if 'orderID' not in session:
+        error = "No active order found. Please start an order first."
+        return render_template('error.html', error=error)
+
+    return render_template('addToOrder.html')  # Placeholder for now
 
 @app.route('/validateDonor', methods=['POST'])
 def validateDonor():
