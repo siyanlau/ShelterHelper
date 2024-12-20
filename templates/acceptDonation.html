@@ -5,6 +5,80 @@
 <body>
     <h1>Accept Donation</h1>
     <p>Welcome, {{ username }}! You can accept donations here.</p>
-    <a href="/">Back to Home</a>
+
+    {% if not donorID %}
+        <!-- Donor Validation Form -->
+        <form action="/acceptDonation" method="POST">
+            <label for="donorID">Donor's ID:</label>
+            <input type="text" name="donorID" id="donorID" placeholder="Enter Donor's ID" required>
+            <button type="submit">Validate Donor</button>
+        </form>
+    {% elif not numPieces %}
+        <!-- Item Details Form -->
+        <form action="/acceptDonation" method="POST">
+            <input type="hidden" name="donorID" value="{{ donorID }}">
+            <label for="itemDescription">Item Description:</label>
+            <input type="text" name="itemDescription" id="itemDescription" required> <br>
+
+            <label for="photo">Photo (filename only for now):</label>
+            <input type="text" name="photo" id="photo" required> <br>
+
+            <label for="color">Color:</label>
+            <input type="text" name="color" id="color" required> <br>
+
+            <label for="isNew">Is New:</label>
+            <input type="checkbox" name="isNew" id="isNew" value="1"> Yes <br>
+
+            <label for="material">Material:</label>
+            <input type="text" name="material" id="material" required> <br>
+
+            <label for="mainCategory">Main Category:</label>
+            <input type="text" name="mainCategory" id="mainCategory" required> <br>
+
+            <label for="subCategory">Subcategory:</label>
+            <input type="text" name="subCategory" id="subCategory" required> <br>
+
+            <label for="numPieces">Number of Pieces:</label>
+            <input type="number" name="numPieces" id="numPieces" min="1" required> <br>
+            
+            <button type="submit">Next</button>
+        </form>
+        <a href="/acceptDonation">Back to Donor Validation</a> <br>
+    {% else %}
+        <!-- Piece Details Form -->
+        <h3>Enter Details for Each Piece</h3>
+        <form action="/submitDonation" method="POST">
+            <input type="hidden" name="donorID" value="{{ donorID }}">
+            <input type="hidden" name="itemDescription" value="{{ itemDescription }}">
+            <input type="hidden" name="photo" value="{{ photo }}">
+            <input type="hidden" name="color" value="{{ color }}">
+            <input type="hidden" name="isNew" value="{{ isNew }}">
+            <input type="hidden" name="material" value="{{ material }}">
+            <input type="hidden" name="mainCategory" value="{{ mainCategory }}">
+            <input type="hidden" name="subCategory" value="{{ subCategory }}">
+            <input type="hidden" name="numPieces" value="{{ numPieces }}">
+            
+            {% for i in range(1, numPieces + 1) %}
+                <fieldset>
+                    <legend>Piece {{ i }}</legend>
+                    <label for="pDescription{{ i }}">Description:</label>
+                    <input type="text" name="pDescription{{ i }}" required> <br>
+                    <label for="roomNum{{ i }}">Room Number:</label>
+                    <input type="number" name="roomNum{{ i }}" required> <br>
+                    <label for="shelfNum{{ i }}">Shelf Number:</label>
+                    <input type="number" name="shelfNum{{ i }}" required> <br>
+                </fieldset>
+                <br>
+            {% endfor %}
+
+            <button type="submit">Submit Donation</button>
+        </form>
+    {% endif %}
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <a href="/home">Back to Home</a>
 </body>
 </html>

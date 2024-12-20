@@ -205,5 +205,89 @@ def findOrderItemsPage():
         return redirect(url_for('login'))
     return render_template('findOrderItems.html')
 
+@app.route('/acceptDonation', methods=['GET', 'POST'])
+def acceptDonation():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    # Check if the user is a staff member or supervisor
+    username = session['username']
+    cursor = conn.cursor()
+    query = '''
+        SELECT roleID 
+        FROM Person 
+        WHERE userName = %s
+    '''
+    cursor.execute(query, (username,))
+    role = cursor.fetchone()
+
+    if not role or role['roleID'] not in ['staff', 'supervisor']:
+        cursor.close()
+        error = "You are not a staff member."
+        return render_template('error.html', error=error)
+
+    donorID = None
+    error = None
+    if request.method == 'POST':
+        donorID = request.form['donorID']
+
+        # Check if the donor exists
+        query_user_exists = '''
+            SELECT roleID 
+            FROM Person 
+            WHERE userName = %s
+        '''
+        cursor.execute(query_user_exists, (donorID,))
+        user = cursor.fetchone()
+
+        if not user:
+            error = "The user does not exist."
+            donorID = None
+        elif user['roleID'] != 'donor':
+            error = "The user exists but is not registered as a donor."
+            donorID = None
+        else:
+            # Valid donor
+            cursor.close()
+            return render_template('acceptDonation.html', username=username, donorID=donorID)
+
+    cursor.close()
+    return render_template('acceptDonation.html', username=username, error=error, donorID=donorID)
+
+
+@app.route('/validateDonor', methods=['POST'])
+def validateDonor():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    donorID = request.form['donorID']
+
+    # Check if the donor exists
+    cursor = conn.cursor()
+    query_user_exists = '''
+        SELECT roleID 
+        FROM Person 
+        WHERE userName = %s
+    '''
+    cursor.execute(query_user_exists, (donorID,))
+    user = cursor.fetchone()
+    cursor.close()
+
+    if not user:
+        # User does not exist
+        error = "The user does not exist."
+        return render_template('acceptDonation.html', username=session['username'], error=error)
+
+    # Check if the role is 'donor'
+    if user['roleID'] != 'donor':
+        # User exists but is not a donor
+        error = "The user exists but is not registered as a donor."
+        return render_template('acceptDonation.html', username=session['username'], error=error)
+
+    # Proceed to donation form (next step)
+    return render_template('acceptDonation.html', username=session['username'])
+
+
+
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)
