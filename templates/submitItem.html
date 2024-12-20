@@ -1,0 +1,43 @@
+<html>
+<head>
+    <title>Submit Item</title>
+</head>
+<body>
+    <h1>Submit Item</h1>
+    <p>Submitting an item for donor {{ donorID }}</p>
+
+    <form action="/submitItem/{{ donorID }}" method="POST">
+        <label for="itemDescription">Item Description:</label>
+        <input type="text" name="itemDescription" required> <br>
+
+        <label for="photo">Photo:</label>
+        <input type="text" name="photo" placeholder="Filename (e.g., photo.jpg)" required> <br>
+
+        <label for="color">Color:</label>
+        <input type="text" name="color" required> <br>
+
+        <label for="isNew">Is New:</label>
+        <input type="checkbox" name="isNew" value="1"> <br>
+
+        <label for="material">Material:</label>
+        <input type="text" name="material" required> <br>
+
+        <label for="mainCategory">Main Category:</label>
+        <input type="text" name="mainCategory" required> <br>
+
+        <label for="subCategory">Subcategory:</label>
+        <input type="text" name="subCategory" required> <br>
+
+        <label for="numPieces">Number of Pieces:</label>
+        <input type="number" name="numPieces" min="1" required> <br>
+
+        <button type="submit">Next</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <a href="/acceptDonation">Back to Donor Validation</a>
+</body>
+</html>

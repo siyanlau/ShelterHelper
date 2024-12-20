@@ -254,6 +254,112 @@ def acceptDonation():
     cursor.close()
     return render_template('acceptDonation.html', username=username, error=error, donorID=donorID)
 
+@app.route('/submitItem/<donorID>', methods=['GET', 'POST'])
+def submitItem(donorID):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    username = session['username']
+    if request.method == 'POST':
+        itemDescription = request.form['itemDescription']
+        photo = request.form['photo']
+        color = request.form['color']
+        isNew = 1 if 'isNew' in request.form else 0
+        material = request.form['material']
+        mainCategory = request.form['mainCategory']
+        subCategory = request.form['subCategory']
+        numPieces = int(request.form['numPieces'])
+
+        # Validate inputs
+        if not itemDescription or not mainCategory or not subCategory:
+            error = "Required fields are missing."
+            return render_template('submitItem.html', username=username, donorID=donorID, error=error)
+
+        # Store data in session or pass along as hidden fields
+        return render_template(
+            'submitPieces.html',
+            username=username,
+            donorID=donorID,
+            itemDescription=itemDescription,
+            photo=photo,
+            color=color,
+            isNew=isNew,
+            material=material,
+            mainCategory=mainCategory,
+            subCategory=subCategory,
+            numPieces=numPieces
+        )
+
+    return render_template('submitItem.html', username=username, donorID=donorID)
+
+@app.route('/submitPieces', methods=['POST'])
+def submitPieces():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    # Collect hidden fields for item-level details
+    donorID = request.form['donorID']
+    itemDescription = request.form['itemDescription']
+    photo = request.form['photo']
+    color = request.form['color']
+    isNew = int(request.form['isNew'])
+    material = request.form['material']
+    mainCategory = request.form['mainCategory']
+    subCategory = request.form['subCategory']
+    numPieces = int(request.form['numPieces'])
+
+    cursor = conn.cursor()
+
+    # Insert into Item table
+    query_insert_item = '''
+        INSERT INTO Item (iDescription, photo, color, isNew, hasPieces, material, mainCategory, subCategory)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    '''
+    cursor.execute(query_insert_item, (itemDescription, photo, color, isNew, 1 if numPieces > 1 else 0, material, mainCategory, subCategory))
+    conn.commit()
+    itemID = cursor.lastrowid
+
+    # Insert into Piece table
+    query_insert_piece = '''
+        INSERT INTO Piece (ItemID, pieceNum, pDescription, length, width, height, roomNum, shelfNum, pNotes)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    '''
+    for i in range(1, numPieces + 1):
+        piece_description = request.form[f'pDescription{i}']
+        length = int(request.form[f'length{i}'])
+        width = int(request.form[f'width{i}'])
+        height = int(request.form[f'height{i}'])
+        room_num = int(request.form[f'roomNum{i}'])
+        shelf_num = int(request.form[f'shelfNum{i}'])
+        notes = request.form.get(f'pNotes{i}', '')
+
+        # Validate location
+        query_check_location = '''
+            SELECT * FROM Location 
+            WHERE roomNum = %s AND shelfNum = %s
+        '''
+        cursor.execute(query_check_location, (room_num, shelf_num))
+        location = cursor.fetchone()
+
+        if not location:
+            cursor.close()
+            error = f"Invalid location specified for piece {i}."
+            return render_template('submitPieces.html', error=error)
+
+        cursor.execute(query_insert_piece, (itemID, i, piece_description, length, width, height, room_num, shelf_num, notes))
+    conn.commit()
+
+    # Insert into DonatedBy table
+    query_insert_donatedby = '''
+        INSERT INTO DonatedBy (ItemID, userName, donateDate)
+        VALUES (%s, %s, NOW())
+    '''
+    cursor.execute(query_insert_donatedby, (itemID, donorID))
+    conn.commit()
+    cursor.close()
+
+    return render_template('success.html', success="Donation successfully recorded.")
+
 
 @app.route('/validateDonor', methods=['POST'])
 def validateDonor():

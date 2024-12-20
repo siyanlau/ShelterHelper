@@ -1,0 +1,56 @@
+<html>
+<head>
+    <title>Submit Pieces</title>
+</head>
+<body>
+    <h1>Submit Pieces</h1>
+    <p>Submitting {{ numPieces }} piece(s) for donor {{ donorID }}</p>
+
+    <form action="/submitPieces" method="POST">
+        <input type="hidden" name="donorID" value="{{ donorID }}">
+        <input type="hidden" name="itemDescription" value="{{ itemDescription }}">
+        <input type="hidden" name="photo" value="{{ photo }}">
+        <input type="hidden" name="color" value="{{ color }}">
+        <input type="hidden" name="isNew" value="{{ isNew }}">
+        <input type="hidden" name="material" value="{{ material }}">
+        <input type="hidden" name="mainCategory" value="{{ mainCategory }}">
+        <input type="hidden" name="subCategory" value="{{ subCategory }}">
+        <input type="hidden" name="numPieces" value="{{ numPieces }}">
+
+        {% for i in range(1, numPieces + 1) %}
+            <fieldset>
+                <legend>Piece {{ i }}</legend>
+                <label for="pDescription{{ i }}">Description:</label>
+                <input type="text" name="pDescription{{ i }}" required> <br>
+
+                <label for="length{{ i }}">Length:</label>
+                <input type="number" name="length{{ i }}" min="0" required> <br>
+
+                <label for="width{{ i }}">Width:</label>
+                <input type="number" name="width{{ i }}" min="0" required> <br>
+
+                <label for="height{{ i }}">Height:</label>
+                <input type="number" name="height{{ i }}" min="0" required> <br>
+
+                <label for="roomNum{{ i }}">Room Number:</label>
+                <input type="number" name="roomNum{{ i }}" required> <br>
+
+                <label for="shelfNum{{ i }}">Shelf Number:</label>
+                <input type="number" name="shelfNum{{ i }}" required> <br>
+
+                <label for="pNotes{{ i }}">Notes:</label>
+                <textarea name="pNotes{{ i }}" rows="3"></textarea> <br>
+            </fieldset>
+            <br>
+        {% endfor %}
+
+        <button type="submit">Submit Donation</button>
+    </form>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <a href="/submitItem/{{ donorID }}">Back to Item Submission</a>
+</body>
+</html>
