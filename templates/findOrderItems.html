@@ -27,7 +27,7 @@
                         {% if item.locations %}
                             <ul>
                                 {% for location in item.locations %}
-                                    <li>Room: {{ location.roomNum }}, Shelf: {{ location.shelfNum }}</li>
+                                    <li>Piece #{{location.pieceNum}}: {{location.pDescription}} - Room {{ location.roomNum }}, Shelf {{ location.shelfNum }}</li>
                                 {% endfor %}
                             </ul>
                         {% else %}

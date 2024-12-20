@@ -1,0 +1,32 @@
+<html>
+<head>
+    <title>Items in Order</title>
+</head>
+<body>
+    <h1>Items in Order</h1>
+    <p>Here are the items currently in the order:</p>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Color</th>
+                <th>Material</th>
+                <th>Is New</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order_items %}
+                <tr>
+                    <td>{{ item.iDescription }}</td>
+                    <td>{{ item.color }}</td>
+                    <td>{{ item.material }}</td>
+                    <td>{{ 'Yes' if item.isNew else 'No' }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="/addToOrder">Back to Add Items</a>
+</body>
+</html>

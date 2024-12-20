@@ -1,0 +1,37 @@
+<html>
+<head>
+    <title>Add Items to Order</title>
+</head>
+<body>
+    <h1>Add Items to Order</h1>
+    <p>Welcome, {{ username }}! Use the form below to add items to the current order.</p>
+
+    <!-- Category Selection Form -->
+    <form action="/fetchItems" method="POST">
+        <label for="mainCategory">Main Category:</label>
+        <select id="mainCategory" name="mainCategory" required>
+            <option value="" disabled selected>Select a Main Category</option>
+            {% for category in categories %}
+                <option value="{{ category }}">{{ category }}</option>
+            {% endfor %}
+        </select> <br>
+
+        <label for="subCategory">Sub Category:</label>
+        <select id="subCategory" name="subCategory" required disabled>
+            <option value="" disabled selected>Select a Sub Category</option>
+        </select> <br>
+
+        <button type="submit">Show Items</button>
+    </form>
+
+    <!-- Inject category data for JavaScript -->
+    <script>
+        const categoryData = {{ category_data|tojson }};
+    </script>
+    <script src="/static/js/category.js"></script>
+
+    <a href="/itemsInOrder">View Items in Order</a> <br>
+    <a href="/home">Back to Home</a>
+
+</body>
+</html>

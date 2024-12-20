@@ -1,5 +1,5 @@
 #Import Flask Library
-from flask import render_template, request, session, url_for, redirect, flash
+from flask import render_template, request, session, url_for, redirect, flash, g
 import pymysql.cursors
 from app import app
 import hashlib, os
@@ -116,6 +116,7 @@ def home():
 @app.route('/logout')
 def logout():
     session.pop('username')
+    session.pop('orderID', None)  # Use None as the default value, if user is not a staff to begin with
     return redirect('/')
 
 #Define route for finding a single item using itemID
@@ -450,12 +451,93 @@ def startOrder():
 def addToOrder():
     if 'username' not in session:
         return redirect(url_for('login'))
-
+    
     if 'orderID' not in session:
         error = "No active order found. Please start an order first."
         return render_template('error.html', error=error)
 
-    return render_template('addToOrder.html')  # Placeholder for now
+    categories, category_data = fetch_categories()
+
+    return render_template(
+        'addToOrder.html',
+        username=session['username'],
+        categories=categories,
+        category_data=category_data
+    )
+
+@app.route('/fetchItems', methods=['POST'])
+def fetchItems():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    mainCategory = request.form['mainCategory']
+    subCategory = request.form['subCategory']
+
+    # Fetch items for the selected category
+    cursor = conn.cursor()
+    query_fetch_items = '''
+        SELECT i.ItemID, i.iDescription, i.color, i.material, i.isNew
+        FROM Item i
+        LEFT JOIN ItemIn ii ON i.ItemID = ii.ItemID
+        WHERE i.mainCategory = %s AND i.subCategory = %s AND ii.ItemID IS NULL
+    '''
+    cursor.execute(query_fetch_items, (mainCategory, subCategory))
+    items = cursor.fetchall()
+    cursor.close()
+
+    return render_template(
+        'itemList.html',
+        mainCategory=mainCategory,
+        subCategory=subCategory,
+        items=items
+    )
+
+@app.route('/addItemToOrder', methods=['POST'])
+def addItemToOrder():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    orderID = session.get('orderID')
+    if not orderID:
+        return redirect(url_for('startOrder'))  # Redirect if no order is active
+
+    itemID = request.form['itemID']
+
+    # Insert the item into the ItemIn table
+    cursor = conn.cursor()
+    query_add_item = '''
+        INSERT INTO ItemIn (ItemID, orderID, found)
+        VALUES (%s, %s, 0)
+    '''
+    cursor.execute(query_add_item, (itemID, orderID))
+    conn.commit()
+    cursor.close()
+
+    # Redirect back to the "Add to Order" page
+    return redirect(url_for('addToOrder'))
+
+@app.route('/itemsInOrder', methods=['GET'])
+def itemsInOrder():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    orderID = session.get('orderID')
+    if not orderID:
+        return redirect(url_for('startOrder'))  # Redirect if no order is active
+
+    # Fetch items in the current order
+    cursor = conn.cursor()
+    query_fetch_order_items = '''
+        SELECT i.iDescription, i.color, i.material, i.isNew
+        FROM ItemIn ii
+        JOIN Item i ON ii.ItemID = i.ItemID
+        WHERE ii.orderID = %s
+    '''
+    cursor.execute(query_fetch_order_items, (orderID,))
+    order_items = cursor.fetchall()
+    cursor.close()
+
+    return render_template('itemsInOrder.html', order_items=order_items)
 
 @app.route('/validateDonor', methods=['POST'])
 def validateDonor():
@@ -505,6 +587,30 @@ def fetch_location_data():
         location_data[room].append(shelf)
     
     return location_data
+
+def fetch_categories():
+    """Fetch main categories and subcategories from the database."""
+    cursor = conn.cursor()
+    query_fetch_categories = '''
+        SELECT DISTINCT mainCategory FROM Category
+    '''
+    cursor.execute(query_fetch_categories)
+    categories = [row['mainCategory'] for row in cursor.fetchall()]
+
+    query_fetch_all_categories = '''
+        SELECT mainCategory, subCategory FROM Category
+    '''
+    cursor.execute(query_fetch_all_categories)
+    category_data = {}
+    for row in cursor.fetchall():
+        main = row['mainCategory']
+        sub = row['subCategory']
+        if main not in category_data:
+            category_data[main] = []
+        category_data[main].append(sub)
+
+    cursor.close()
+    return categories, category_data
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug = True)

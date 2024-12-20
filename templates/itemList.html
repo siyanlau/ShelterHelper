@@ -1,0 +1,38 @@
+<html>
+<head>
+    <title>Available Items</title>
+</head>
+<body>
+    <h1>Available Items</h1>
+    <p>Items in the category: {{ mainCategory }} - {{ subCategory }}</p>
+
+    <form action="/addItemToOrder" method="POST">
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Color</th>
+                    <th>Material</th>
+                    <th>Is New</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr>
+                        <td>{{ item.iDescription }}</td>
+                        <td>{{ item.color }}</td>
+                        <td>{{ item.material }}</td>
+                        <td>{{ 'Yes' if item.isNew else 'No' }}</td>
+                        <td>
+                            <button type="submit" name="itemID" value="{{ item.ItemID }}">Add to Order</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+
+    <a href="/addToOrder">Back to Category Selection</a>
+</body>
+</html>
